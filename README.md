@@ -4,7 +4,7 @@ Object oriented python implementation to coordinate data movement and operations
 
 ## Getting Started
 
-Get the project up and running on your local machine for development and testing. Currently only need pandas with scope for gempy and cython.
+Get the project up and running on your local machine for development and testing. Currently only need pandas with scope for gempy and cython. TODO: Docker container for portability.
 
 ### Dependencies
 

@@ -1,0 +1,3 @@
+Ensemble generator class that coordinates data movement and operations in map2loop.
+This implementation takes an object oriented approach to data manipulation and transfer.
+A start to reverse engineer map2loop...

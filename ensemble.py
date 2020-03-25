@@ -34,6 +34,9 @@ class EnsembleGenerator():
 
     # Helper function for tracking and retrieving many perturbed sets
     def getAllSetInformation(self):
+        print('{:<14}'.format("name"), end='\t')
+        print('{:<14}'.format("time"), end='\t\t\t')
+        print('{:<14}'.format("perturbations"))
         for pointset in self.pertub:
             print('{:<14}'.format(pointset.name), end='\t')
             print('{:<14}'.format(time.ctime(pointset.timestamp)), end='\t')
@@ -44,11 +47,12 @@ class EnsembleGenerator():
 
     # Accepts number of perturbed sets to generate OR set by user
     # Stores these in Pointset object with unique (name, timestamp) 
+    # Returns name and rough indication of pointset building and copying time
     def generatePerturbations(self):
         # TODO: Chuck a while loop here to disable duplicates 
         # and valid dir name checking/enforcing 
-        name = input("What would you like to name this run?")
-        numSetsToGen = input("How many perturbed sets to generate?")
+        name = input("What would you like to name this run? ")
+        numSetsToGen = int(input("How many perturbed sets to generate? "))
         timestamp = time.time()
         # TODO: Do manipulations here
         # The following is dummy code that appends the original set 
@@ -58,7 +62,7 @@ class EnsembleGenerator():
             sets.append(self.pertub[0].sets[0])
 
         self.pertub.append(PointSet(name, timestamp, sets))
-                
+        return name, time.time() - timestamp            
 
 # Begin execution here
 def main():
@@ -75,9 +79,13 @@ def main():
     generator = EnsembleGenerator(contacts, contactOrientations, faults, faultOrientations)
     
     # Test out creating a couple of different sized pointsets
-    generator.generatePerturbations()
-    generator.generatePerturbations()
-    
+    name, elapsed = generator.generatePerturbations()
+    print(name, "created in", elapsed, "seconds.")
+    print()
+    name, duration = generator.generatePerturbations()
+    print(name, "created in", elapsed, "seconds.")
+    print()
+
     # Print out all existing pointset information
     generator.getAllSetInformation()
 

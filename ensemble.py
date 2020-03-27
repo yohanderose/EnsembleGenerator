@@ -4,6 +4,12 @@
 #     - Create PointSet object with a name, timestamp and array of perturbed datasets
 #     - Output these datasets as a named folder of csvs (for now) 
 
+# TODO: 
+#       - the actual perturbing functions
+#       - a docker container for development 
+#       - a pretty diagram of how the objects work
+#       - separating out the program properly
+
 import time
 import pandas as pd
 
@@ -54,7 +60,7 @@ class EnsembleGenerator():
         name = input("What would you like to name this run? ")
         numSetsToGen = int(input("How many perturbed sets to generate? "))
         timestamp = time.time()
-        # TODO: Do manipulations here
+        # Do manipulations here
         # The following is dummy code that appends the original set 
         # as many times as specified to simulate the perturbed sets
         sets = []

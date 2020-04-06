@@ -1,0 +1,1 @@
+{"samples": 10, "error_gps": 5, "DEM": null}

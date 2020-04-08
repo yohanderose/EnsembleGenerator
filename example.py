@@ -1,5 +1,5 @@
 import pandas as pd
-from generator import EnsembleGenerator, PointSet 
+from generator import EnsembleGenerator, Ensemble 
 
 def main():
     print("Starting program...")
@@ -12,14 +12,15 @@ def main():
     generator = EnsembleGenerator(contacts, contact_orients, faults, fault_orients)
 
     # Create an ensemble and name it 'contacts' when prompted
-    generator.generate_ensemble_uniform(original=generator.contacts, samples=10, error_gps=5)
-    
+    generator.generate_ensemble(original=generator.contacts, samples=10, distribution='uniform', error_gps=5)
+
     # Retrieve details on previously generated ensembles
     print()
     generator.get_ensemble_info()
 
     # Save ensemble dataframes as csvs by querying its name
-    generator.save_ensemble_tocsv('contacts')
+    generator.save_ensemble_toCSV('contacts')
 
 if __name__ == "__main__":
     main()
+

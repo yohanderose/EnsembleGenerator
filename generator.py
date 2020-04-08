@@ -11,6 +11,7 @@
 #       - separating out the program properly 
 #       - check mem usage (or saving to disk) 
 #       - create loop repo and restyle (https://www.python.org/dev/peps/pep-0008/)
+#       - group info & platform specific exporting
 
 import sys, os, shutil
 from os import path
@@ -53,32 +54,29 @@ class Ensemble():
 class EnsembleGenerator():
     # Initialise by passing the original dataframes into  
     def __init__(self, contacts, contact_orients, faults, fault_orients):
-        # TODO: list of objects or loading functions 
-        # - more than just dataframes, set different properties
-        # - instantiate generator object with something else,
         super().__init__()
         self.contacts = contacts
         self.contact_orients = contact_orients
         self.faults = faults
         self.fault_orients = fault_orients       
         # [Ensemble, Ensemble, Ensemble ...]
-        self.sets = []
+        self.ensembles = []
         # TODO: name better
 
 
-    # Helper function for tracking and retrieving many perturbed sets
+    # Helper function for tracking and retrieving everything
     def get_ensembles_info(self):
         print('{:<14}'.format("name"), end='\t')
         print('{:<14}'.format("timestamp"), end='\t\t\t\t')
         print('{:<14}'.format("samples"))
-        for Ensemble in self.sets:
+        for Ensemble in self.ensembles:
             print('{:<14}'.format(Ensemble.name), end='\t')
             print('{:<14}'.format(time.ctime(Ensemble.timestamp)), end='\t\t')
             print('{:<14}'.format(len(Ensemble.ensemble)))
     
     # Search for an ensemble and output it perturbations to a folder
     def save_ensemble_toCSV(self, name):
-        found = [set for set in self.sets if set.name == name]
+        found = [ens for ens in self.ensembles if ens.name == name]
         if found:
             name = found[0].name + "/"
             ensemble = found[0].ensemble
@@ -166,7 +164,7 @@ class EnsembleGenerator():
 ##################################################################################################################################
             
         newEnsemble = Ensemble(name, timestamp, original, ensemble, params)
-        self.sets.append(newEnsemble)
+        self.ensembles.append(newEnsemble)
 
         
             

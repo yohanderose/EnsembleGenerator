@@ -16,7 +16,7 @@ def main():
 
     # Retrieve details on previously generated ensembles
     print()
-    generator.get_ensemble_info()
+    generator.get_ensembles_info()
 
     # Save ensemble dataframes as csvs by querying its name
     generator.save_ensemble_toCSV('contacts')

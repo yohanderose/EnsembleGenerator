@@ -67,7 +67,7 @@ class EnsembleGenerator():
 
 
     # Helper function for tracking and retrieving many perturbed sets
-    def get_ensemble_info(self):
+    def get_ensembles_info(self):
         print('{:<14}'.format("name"), end='\t')
         print('{:<14}'.format("timestamp"), end='\t\t\t\t')
         print('{:<14}'.format("samples"))
@@ -137,6 +137,7 @@ class EnsembleGenerator():
                     # VALUE ERROR print() break
                     for r in range(len(file_contacts)):
                         start_x = file_contacts.loc[r, 'X']
+                        # Numpy throwing value error - 
                         new_coords_u.loc[r, 'X'] = ss.uniform.rvs(size=1, loc=start_x-(error_gps/2), scale=error_gps)
                         start_y = file_contacts.loc[r, 'Y']
                         new_coords_u.loc[r, 'Y'] = ss.uniform.rvs(size=1, loc=start_y-(error_gps/2), scale=error_gps)

@@ -1,5 +1,5 @@
 import pandas as pd
-from generator import EnsembleGenerator, Ensemble 
+from generator import EnsembleGenerator, Ensemble
 
 def main():
     print("Starting program...")
@@ -8,11 +8,11 @@ def main():
     contact_orients = pd.read_csv('data/orientations_clean.csv')
     faults = pd.read_csv('data/faults.csv')
     fault_orients = pd.read_csv('data/fault_orientations.csv')
- 
+
     generator = EnsembleGenerator(contacts, contact_orients, faults, fault_orients)
 
     # Create an ensemble and name it 'contacts' when prompted
-    generator.generate_ensemble(original=generator.contacts, samples=10, distribution='uniform', error_gps=5)
+    generator.generate_ensemble(original=generator.contacts, samples=10, distribution='uniform', error_gps=5, DEM=True)
 
     # Retrieve details on previously generated ensembles
     print()
@@ -23,4 +23,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

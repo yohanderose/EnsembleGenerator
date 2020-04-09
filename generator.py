@@ -2,16 +2,17 @@
 # Expected  functionality:
 #     - Take in map2loop outputs and store original data
 #     - Create Ensemble object with a name, timestamp and array of perturbed datasets
-#     - Output these datasets as a named folder of csvs (for now) 
+#     - Output these datasets as a named folder of csvs (for now)
 
-# TODO: 
+# TODO:
 #       - the actual perturbing functions (from mark)
-#       - a docker container for development 
+#       - a docker container for development
 #       --> LoopProjectFile, think of design parent object
-#       - separating out the program properly 
-#       - check mem usage (or saving to disk) 
+#       - separating out the program properly
+#       - check mem usage (or saving to disk)
 #       - create loop repo and restyle (https://www.python.org/dev/peps/pep-0008/)
 #       - group info & platform specific exporting
+#       - add 'self.projection' for the class to define the projection and catch/convert external files that don't conform
 
 import sys, os, shutil
 from os import path
@@ -39,7 +40,7 @@ class colours():
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-# 
+#
 class Ensemble():
     def __init__(self, name, timestamp, original, ensemble, params):
         super().__init__()
@@ -52,13 +53,13 @@ class Ensemble():
 # Object to handle all operations on and storage of the original data
 # Holds a list of the original Ensemble followed by Ensembles of perturbed data
 class EnsembleGenerator():
-    # Initialise by passing the original dataframes into  
+    # Initialise by passing the original dataframes into
     def __init__(self, contacts, contact_orients, faults, fault_orients):
         super().__init__()
         self.contacts = contacts
         self.contact_orients = contact_orients
         self.faults = faults
-        self.fault_orients = fault_orients       
+        self.fault_orients = fault_orients
         # [Ensemble, Ensemble, Ensemble ...]
         self.ensembles = []
         # TODO: name better
@@ -73,7 +74,7 @@ class EnsembleGenerator():
             print('{:<14}'.format(Ensemble.name), end='\t')
             print('{:<14}'.format(time.ctime(Ensemble.timestamp)), end='\t\t')
             print('{:<14}'.format(len(Ensemble.ensemble)))
-    
+
     # Search for an ensemble and output it perturbations to a folder
     def save_ensemble_toCSV(self, name):
         found = [ens for ens in self.ensembles if ens.name == name]
@@ -95,7 +96,7 @@ class EnsembleGenerator():
                 # Save original
                 file_name = name + "original" + ".csv"
                 original.to_csv(file_name)
-                
+
                 # export params as text file
                 with open(name + 'params.txt', 'w') as file:
                     file.write(json.dumps(params))
@@ -107,8 +108,8 @@ class EnsembleGenerator():
                 return
 
     # samples is the number of draws, thus the number of models in the ensemble
-    # error is the assumed error in the location, and will be the width of the distribution    
-    # Stores these in a unique Ensemble object 
+    # error is the assumed error in the location, and will be the width of the distribution
+    # Stores these in a unique Ensemble object
     def generate_ensemble(self, original, samples=10, distribution='uniform', error_gps=5, DEM=None):
         # TODO: Prevent duplicates if this is to be searched on
 
@@ -124,32 +125,71 @@ class EnsembleGenerator():
         }
 
 ##################################################################################################################################
-        if distribution == 'uniform':
-            # Do uniform sampling
-            try:
-                # DEM = # import DEM here for sample new elevations for surface elevations. ISSUE: Don't want to resample elevations for interfaces at depth. Depth constraints needs to be flagged as such?
-                for m in range(0, samples):
-                    new_coords_u = pd.DataFrame(np.zeros((len(file_contacts), 4)),
-                                            columns=['X', 'Y', 'Z', 'formation'])  # uniform
-                    
-                    # VALUE ERROR print() break
-                    for r in range(len(file_contacts)):
-                        start_x = file_contacts.loc[r, 'X']
-                        # Numpy throwing value error - 
-                        new_coords_u.loc[r, 'X'] = ss.uniform.rvs(size=1, loc=start_x-(error_gps/2), scale=error_gps)
-                        start_y = file_contacts.loc[r, 'Y']
-                        new_coords_u.loc[r, 'Y'] = ss.uniform.rvs(size=1, loc=start_y-(error_gps/2), scale=error_gps)
-                        new_coords_u.loc[r, 'Z'] = file_contacts.loc[r, 'Z']  # placeholder for the moment
-                        # TODO line to map new Z value based on sampling the DEM at the new X,Y location
-                        new_coords_u.loc[r, 'formation'] = file_contacts.loc[r, 'formation']                  
-                    
-                    ensemble.append(new_coords_u)
+        if DEM is True:
+            dtm = rasterio.open("C:/Users/Mark/Cloudstor/EGen/test_data3/dtm/hammersley_sheet_dtm.ers")
+            ''' check is needed here to make sure dtm is in the same projection as the contacts data. dtm.crs == projection of project '''
+
+        '''set distribution type for sampling'''
+        if distribution == 'normal':
+            dist_func = ss.norm.rvs
+        else:
+            dist_func = ss.uniform.rvs
+
+        # DEM = # import DEM here for sample new elevations for surface elevations. ISSUE: Don't want to resample elevations for interfaces at depth. Depth constraints needs to be flagged as such?
+        for m in range(0, samples):
+            new_coords = pd.DataFrame(np.zeros((len(file_contacts), 4)), columns=['X', 'Y', 'Z', 'formation'])  # uniform
+            if DEM is True:
+                for r in range(len(file_contacts)):
+                    start_x = file_contacts.loc[r, 'X']
+                    new_coords.loc[r, 'X'] = dist_func(size=1, loc=start_x - (error_gps), scale=error_gps)  # value error
+                    new_coords.loc[r, 'X'] = dist_func(size=1, loc=start_x - (error_gps), scale=error_gps)  # value error
+                    start_y = file_contacts.loc[r, 'Y']
+                    new_coords.loc[r, 'Y'] = dist_func(size=1, loc=start_y - (error_gps), scale=error_gps)
+                    elevation = m2l_utils.value_from_raster(dtm, [(new_coords.loc[r, 'X'], new_coords.loc[r, 'Y'])])
+                    if elevation == -999:  # points outside of the dtm will get a elevation of -999, this is to check for that. If outside, it uses the elevation values from original dataset
+                        new_coords.loc[r, 'Z'] = file_contacts.loc[r, 'Z']
+                    else:
+                        new_coords.loc[r, 'Z'] = elevation
+
+            else:
+                for r in range(len(file_contacts)):
+                    start_x = file_contacts.loc[r, 'X']
+                    new_coords.loc[r, 'X'] = dist_func(size=1, loc=start_x - (error_gps), scale=error_gps)  # value error
+                    start_y = file_contacts.loc[r, 'Y']
+                    new_coords.loc[r, 'Y'] = dist_func(size=1, loc=start_y - (error_gps), scale=error_gps)
+                    new_coords.loc[r, 'Z'] = file_contacts.loc[r, 'Z']
+
+            new_coords["formation"] = file_contacts["formation"]
+            # if distribution == 'uniform':
+            #     # Do uniform sampling
+            #     try:
+            #         # DEM = # import DEM here for sample new elevations for surface elevations. ISSUE: Don't want to resample elevations for interfaces at depth. Depth constraints needs to be flagged as such?
+            #         for m in range(0, samples):
+            #             new_coords_u = pd.DataFrame(np.zeros((len(file_contacts), 4)),
+            #                                     columns=['X', 'Y', 'Z', 'formation'])  # uniform
+            #
+            #             # VALUE ERROR print() break
+            #             for r in range(len(file_contacts)):
+            #                 start_x = file_contacts.loc[r, 'X']
+            #                 # Numpy throwing value error -
+            #                 new_coords_u.loc[r, 'X'] = ss.uniform.rvs(size=1, loc=start_x-(error_gps/2), scale=error_gps)
+            #                 start_y = file_contacts.loc[r, 'Y']
+            #                 new_coords_u.loc[r, 'Y'] = ss.uniform.rvs(size=1, loc=start_y-(error_gps/2), scale=error_gps)
+            #                 new_coords_u.loc[r, 'Z'] = file_contacts.loc[r, 'Z']  # placeholder for the moment
+            #                 # TODO line to map new Z value based on sampling the DEM at the new X,Y location
+            #                 new_coords_u.loc[r, 'formation'] = file_contacts.loc[r, 'formation']
+
+########################################################################################
+
+
+                    #ensemble.append(new_coords_u)
+                ensemble.append(new_coords)
             except Exception as e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                 print(colours.FAIL + "ERROR:\t", exc_type, fname, exc_tb.tb_lineno, "" + colours.ENDC)
                 return
-        
+
         elif distribution == 'normal':
             # Do uniform sampling
             try:
@@ -162,9 +202,6 @@ class EnsembleGenerator():
         elif distribution == 'vmf':
             pass
 ##################################################################################################################################
-            
+
         newEnsemble = Ensemble(name, timestamp, original, ensemble, params)
         self.ensembles.append(newEnsemble)
-
-        
-            

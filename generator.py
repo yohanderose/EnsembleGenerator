@@ -120,14 +120,26 @@ class EnsembleGenerator():
         params = {
             "samples" : samples,
             "distribution" : distribution,
+            "file_input" : file_input,
             "error_gps" : error_gps,
             "DEM" : DEM
         }
 
 ##################################################################################################################################
+        # args listed below for your reference so you see which have default values, and what those defaults are.
+        # def perturb_interface(samples, error_gps, file_input='contacts', distribution='uniform', DEM=None)
+        ''' samples is the number of draws, thus the number of models in the ensemble
+        error_gps is the assumed error in the location, and will be the width of the distribution
+        distribution is the sampling type - defaults to uniform, the other option is 'normal' '''
+
+        if file_input == 'faults':
+            input_file = pd.read_csv("faults.csv")  # load data
+        else:
+            input_file = pd.read_csv("contacts_clean.csv")  # load data
+
         if DEM is True:
             dtm = rasterio.open("C:/Users/Mark/Cloudstor/EGen/test_data3/dtm/hammersley_sheet_dtm.ers")
-            ''' check is needed here to make sure dtm is in the same projection as the contacts data. dtm.crs == projection of project '''
+        ''' check is needed here to make sure dtm is in the same projection as the contacts data. dtm.crs == projection of project '''
 
         '''set distribution type for sampling'''
         if distribution == 'normal':
@@ -137,29 +149,31 @@ class EnsembleGenerator():
 
         # DEM = # import DEM here for sample new elevations for surface elevations. ISSUE: Don't want to resample elevations for interfaces at depth. Depth constraints needs to be flagged as such?
         for m in range(0, samples):
-            new_coords = pd.DataFrame(np.zeros((len(file_contacts), 4)), columns=['X', 'Y', 'Z', 'formation'])  # uniform
+            new_coords = pd.DataFrame(np.zeros((len(input_file), 4)), columns=['X', 'Y', 'Z', 'formation'])  # uniform
             if DEM is True:
-                for r in range(len(file_contacts)):
-                    start_x = file_contacts.loc[r, 'X']
+                for r in range(len(input_file)):
+                    start_x = input_file.loc[r, 'X']
                     new_coords.loc[r, 'X'] = dist_func(size=1, loc=start_x - (error_gps), scale=error_gps)  # value error
                     new_coords.loc[r, 'X'] = dist_func(size=1, loc=start_x - (error_gps), scale=error_gps)  # value error
-                    start_y = file_contacts.loc[r, 'Y']
+                    start_y = input_file.loc[r, 'Y']
                     new_coords.loc[r, 'Y'] = dist_func(size=1, loc=start_y - (error_gps), scale=error_gps)
                     elevation = m2l_utils.value_from_raster(dtm, [(new_coords.loc[r, 'X'], new_coords.loc[r, 'Y'])])
-                    if elevation == -999:  # points outside of the dtm will get a elevation of -999, this is to check for that. If outside, it uses the elevation values from original dataset
-                        new_coords.loc[r, 'Z'] = file_contacts.loc[r, 'Z']
+                    if elevation == -999:  # points outside of the dtm will get a elevation of -999, this is to check for that. If outside, it uses the existing elevation
+                        new_coords.loc[r, 'Z'] = input_file.loc[r, 'Z']
                     else:
                         new_coords.loc[r, 'Z'] = elevation
 
             else:
-                for r in range(len(file_contacts)):
-                    start_x = file_contacts.loc[r, 'X']
+                for r in range(len(input_file)):
+                    start_x = input_file.loc[r, 'X']
                     new_coords.loc[r, 'X'] = dist_func(size=1, loc=start_x - (error_gps), scale=error_gps)  # value error
-                    start_y = file_contacts.loc[r, 'Y']
+                    start_y = input_file.loc[r, 'Y']
                     new_coords.loc[r, 'Y'] = dist_func(size=1, loc=start_y - (error_gps), scale=error_gps)
-                    new_coords.loc[r, 'Z'] = file_contacts.loc[r, 'Z']
+                    new_coords.loc[r, 'Z'] = input_file.loc[r, 'Z']
 
-            new_coords["formation"] = file_contacts["formation"]
+            new_coords["formation"] = input_file["formation"]
+
+
             # if distribution == 'uniform':
             #     # Do uniform sampling
             #     try:
@@ -183,7 +197,7 @@ class EnsembleGenerator():
 
 
                     #ensemble.append(new_coords_u)
-                ensemble.append(new_coords)
+            ensemble.append(new_coords)
             except Exception as e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
